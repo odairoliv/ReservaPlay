@@ -5,11 +5,11 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from reservas.models import Espaco, Modalidade, Reserva
+from reservas.models import Espaco, Reserva
 
 
 class Command(BaseCommand):
-    help = 'Popula o banco com modalidades, espaços e reservas de exemplo.'
+    help = 'Popula o banco com espaços e reservas de exemplo.'
 
     def add_arguments(self, parser):
         parser.add_argument('--limpar', action='store_true', help='Apaga os dados existentes antes de popular.')
@@ -19,59 +19,39 @@ class Command(BaseCommand):
         if options['limpar']:
             Reserva.objects.all().delete()
             Espaco.objects.all().delete()
-            Modalidade.objects.all().delete()
             self.stdout.write('Dados anteriores removidos.')
-
-        modalidades = {}
-        for nome, descricao in [
-            ('Futsal', 'Futebol de salão, 5 jogadores por time.'),
-            ('Society', 'Futebol society em grama sintética, 7 jogadores por time.'),
-            ('Vôlei', 'Voleibol de quadra.'),
-            ('Basquete', 'Basquetebol.'),
-            ('Tênis', 'Tênis simples ou duplas.'),
-            ('Beach Tennis', 'Tênis de praia em quadra de areia.'),
-            ('Natação', 'Raias para treino de natação.'),
-        ]:
-            modalidades[nome], _ = Modalidade.objects.get_or_create(nome=nome, defaults={'descricao': descricao})
 
         espacos_dados = [
             {
                 'nome': 'Quadra Poliesportiva Central', 'tipo': Espaco.Tipo.QUADRA, 'capacidade': 20,
                 'preco_hora': Decimal('90.00'), 'coberto': True,
                 'descricao': 'Quadra coberta com piso emborrachado e iluminação LED.',
-                'modalidades': ['Futsal', 'Vôlei', 'Basquete'],
             },
             {
                 'nome': 'Campo Society Arena', 'tipo': Espaco.Tipo.CAMPO, 'capacidade': 16,
                 'preco_hora': Decimal('150.00'), 'coberto': False,
                 'horario_abertura': time(7, 0), 'horario_fechamento': time(23, 0),
                 'descricao': 'Campo de grama sintética com vestiário.',
-                'modalidades': ['Society'],
             },
             {
                 'nome': 'Quadra de Areia Sol', 'tipo': Espaco.Tipo.QUADRA, 'capacidade': 8,
                 'preco_hora': Decimal('70.00'), 'coberto': False,
                 'descricao': 'Quadra de areia para beach tennis e vôlei de praia.',
-                'modalidades': ['Beach Tennis', 'Vôlei'],
             },
             {
                 'nome': 'Quadra de Tênis Saibro', 'tipo': Espaco.Tipo.QUADRA, 'capacidade': 4,
                 'preco_hora': Decimal('80.00'), 'coberto': False,
-                'modalidades': ['Tênis'],
             },
             {
                 'nome': 'Piscina Semiolímpica', 'tipo': Espaco.Tipo.PISCINA, 'capacidade': 30,
                 'preco_hora': Decimal('120.00'), 'coberto': True,
                 'horario_abertura': time(6, 0), 'horario_fechamento': time(21, 0),
-                'modalidades': ['Natação'],
             },
         ]
 
         espacos = {}
         for dados in espacos_dados:
-            nomes_modalidades = dados.pop('modalidades')
             espaco, _ = Espaco.objects.update_or_create(nome=dados['nome'], defaults=dados)
-            espaco.modalidades.set([modalidades[n] for n in nomes_modalidades])
             espacos[espaco.nome] = espaco
 
         hoje = timezone.localdate()
@@ -96,6 +76,6 @@ class Command(BaseCommand):
             criadas += criada
 
         self.stdout.write(self.style.SUCCESS(
-            f'{Modalidade.objects.count()} modalidades, {Espaco.objects.count()} espaços '
+            f'{Espaco.objects.count()} espaços '
             f'e {Reserva.objects.count()} reservas no banco ({criadas} reservas novas).'
         ))

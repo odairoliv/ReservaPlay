@@ -8,19 +8,6 @@
 GET {{base}}/
 
 ########################################################
-# MODALIDADES
-########################################################
-
-### Listar
-GET {{base}}/modalidades/
-
-### Criar
-POST {{base}}/modalidades/
-Content-Type: application/json
-
-{ "nome": "Handebol", "descricao": "Esporte coletivo jogado com as mãos." }
-
-########################################################
 # ESPAÇOS
 ########################################################
 
@@ -30,13 +17,10 @@ GET {{base}}/espacos/
 ### Filtros, busca e ordenação
 GET {{base}}/espacos/?tipo=QUADRA&coberto=false&preco_max=100&ordering=-preco_hora
 
-### Espaços de uma modalidade (N:N)
-GET {{base}}/espacos/?modalidade=1
-
 ### Busca textual
 GET {{base}}/espacos/?search=areia
 
-### Detalhe (modalidades e reservas aninhadas) — 200
+### Detalhe (reservas aninhadas) — 200
 GET {{base}}/espacos/1/
 
 ### Detalhe inexistente — 404
@@ -54,8 +38,7 @@ Content-Type: application/json
   "preco_hora": "180.00",
   "coberto": true,
   "horario_abertura": "07:00",
-  "horario_fechamento": "22:00",
-  "modalidade_ids": [1, 3, 4]
+  "horario_fechamento": "22:00"
 }
 
 ### Criar inválido — 400
@@ -77,8 +60,7 @@ Content-Type: application/json
   "coberto": true,
   "ativo": true,
   "horario_abertura": "08:00",
-  "horario_fechamento": "23:00",
-  "modalidade_ids": [1, 3, 4]
+  "horario_fechamento": "23:00"
 }
 
 ### Atualização parcial (PATCH) — 200

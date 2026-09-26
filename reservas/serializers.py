@@ -1,16 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Espaco, Modalidade, Reserva
-
-
-# ---------------------------------------------------------------------------
-# Modalidade
-# ---------------------------------------------------------------------------
-class ModalidadeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Modalidade
-        fields = ['id', 'nome', 'descricao']
+from .models import Espaco, Reserva
 
 
 # ---------------------------------------------------------------------------
@@ -37,23 +28,12 @@ class ReservaResumoSerializer(serializers.ModelSerializer):
 class EspacoSerializer(serializers.ModelSerializer):
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
 
-    # Leitura: lista de modalidades aninhadas (objetos completos).
-    modalidades = ModalidadeSerializer(many=True, read_only=True)
-    # Escrita: o cliente envia apenas os IDs das modalidades.
-    modalidade_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Modalidade.objects.all(),
-        many=True,
-        write_only=True,
-        required=False,
-        source='modalidades',
-    )
-
     class Meta:
         model = Espaco
         fields = [
             'id', 'nome', 'tipo', 'tipo_display', 'descricao', 'capacidade',
             'preco_hora', 'coberto', 'ativo', 'horario_abertura', 'horario_fechamento',
-            'modalidades', 'modalidade_ids', 'criado_em', 'atualizado_em',
+            'criado_em', 'atualizado_em',
         ]
         read_only_fields = ['criado_em', 'atualizado_em']
 

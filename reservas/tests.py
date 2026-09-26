@@ -5,18 +5,15 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Espaco, Modalidade, Reserva
+from .models import Espaco, Reserva
 
 
 class BaseAPITestCase(APITestCase):
     def setUp(self):
-        self.futsal = Modalidade.objects.create(nome='Futsal')
-        self.volei = Modalidade.objects.create(nome='Vôlei')
         self.espaco = Espaco.objects.create(
             nome='Quadra A', tipo=Espaco.Tipo.QUADRA, capacidade=10,
             preco_hora=Decimal('100.00'), coberto=True,
         )
-        self.espaco.modalidades.set([self.futsal])
         self.amanha = timezone.localdate() + timedelta(days=1)
         self.reserva = Reserva.objects.create(
             espaco=self.espaco, cliente_nome='João', cliente_email='joao@email.com',
@@ -50,10 +47,9 @@ class EspacoAPITests(BaseAPITestCase):
         resp = self.client.get('/api/espacos/', {'preco_max': 150})
         self.assertEqual([e['nome'] for e in resp.data['results']], ['Quadra A'])
 
-    def test_detalhe_com_relacionamentos_aninhados(self):
+    def test_detalhe_com_reservas_aninhadas(self):
         resp = self.client.get(f'/api/espacos/{self.espaco.id}/')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data['modalidades'][0]['nome'], 'Futsal')
         self.assertEqual(resp.data['reservas'][0]['cliente_nome'], 'João')
 
     def test_detalhe_inexistente_404(self):
@@ -63,10 +59,9 @@ class EspacoAPITests(BaseAPITestCase):
     def test_criar_201(self):
         resp = self.client.post('/api/espacos/', {
             'nome': 'Campo B', 'tipo': 'CAMPO', 'capacidade': 14, 'preco_hora': '150.00',
-            'modalidade_ids': [self.futsal.id, self.volei.id],
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(len(resp.data['modalidades']), 2)
+        self.assertEqual(resp.data['tipo_display'], 'Campo')
 
     def test_criar_invalido_400(self):
         resp = self.client.post('/api/espacos/', {'nome': '', 'capacidade': 0}, format='json')
@@ -81,11 +76,11 @@ class EspacoAPITests(BaseAPITestCase):
     def test_put_substitui_registro(self):
         resp = self.client.put(f'/api/espacos/{self.espaco.id}/', {
             'nome': 'Quadra A Reformada', 'tipo': 'GINASIO', 'capacidade': 50,
-            'preco_hora': '200.00', 'modalidade_ids': [self.volei.id],
+            'preco_hora': '200.00',
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data['tipo'], 'GINASIO')
-        self.assertEqual([m['nome'] for m in resp.data['modalidades']], ['Vôlei'])
+        self.assertEqual(resp.data['nome'], 'Quadra A Reformada')
 
     def test_put_incompleto_400(self):
         resp = self.client.put(f'/api/espacos/{self.espaco.id}/', {'nome': 'Só nome'}, format='json')
@@ -199,19 +194,6 @@ class ReservaAPITests(BaseAPITestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         resp = self.client.get(f'/api/reservas/{self.reserva.id}/')
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-
-class ModalidadeAPITests(BaseAPITestCase):
-    def test_crud(self):
-        resp = self.client.post('/api/modalidades/', {'nome': 'Handebol'}, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
-        pk = resp.data['id']
-        resp = self.client.post('/api/modalidades/', {'nome': 'Handebol'}, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)  # nome único
-        resp = self.client.patch(f'/api/modalidades/{pk}/', {'descricao': 'Com as mãos'}, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        resp = self.client.delete(f'/api/modalidades/{pk}/')
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class ErroInternoTests(APITestCase):

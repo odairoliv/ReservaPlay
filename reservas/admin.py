@@ -1,12 +1,6 @@
 from django.contrib import admin
 
-from .models import Espaco, Modalidade, Reserva
-
-
-@admin.register(Modalidade)
-class ModalidadeAdmin(admin.ModelAdmin):
-    list_display = ['nome']
-    search_fields = ['nome']
+from .models import Espaco, Reserva
 
 
 class ReservaInline(admin.TabularInline):
@@ -18,9 +12,8 @@ class ReservaInline(admin.TabularInline):
 @admin.register(Espaco)
 class EspacoAdmin(admin.ModelAdmin):
     list_display = ['nome', 'tipo', 'capacidade', 'preco_hora', 'coberto', 'ativo']
-    list_filter = ['tipo', 'coberto', 'ativo', 'modalidades']
+    list_filter = ['tipo', 'coberto', 'ativo']
     search_fields = ['nome']
-    filter_horizontal = ['modalidades']
     inlines = [ReservaInline]
 
 

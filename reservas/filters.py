@@ -4,12 +4,11 @@ from .models import Espaco, Reserva
 
 
 class EspacoFilter(django_filters.FilterSet):
-    """Ex.: /api/espacos/?tipo=QUADRA&coberto=true&preco_max=100&modalidade=2"""
+    """Ex.: /api/espacos/?tipo=QUADRA&coberto=true&preco_max=100"""
 
     preco_min = django_filters.NumberFilter(field_name='preco_hora', lookup_expr='gte')
     preco_max = django_filters.NumberFilter(field_name='preco_hora', lookup_expr='lte')
     capacidade_min = django_filters.NumberFilter(field_name='capacidade', lookup_expr='gte')
-    modalidade = django_filters.NumberFilter(field_name='modalidades__id')
 
     class Meta:
         model = Espaco

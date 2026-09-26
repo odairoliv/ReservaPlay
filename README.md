@@ -2,7 +2,7 @@
 
 API RESTful para **reserva de quadras e espaços esportivos**, desenvolvida com **Django** e **Django REST Framework (DRF)**.
 
-O sistema permite cadastrar espaços esportivos (quadras, campos, piscinas, ginásios), as modalidades praticadas em cada um e as reservas feitas pelos clientes, com validação de conflitos de horário, horário de funcionamento e cálculo automático do valor da reserva.
+O sistema permite cadastrar espaços esportivos (quadras, campos, piscinas, ginásios) e as reservas feitas pelos clientes, com validação de conflitos de horário, horário de funcionamento e cálculo automático do valor da reserva.
 
 ---
 
@@ -21,24 +21,23 @@ O sistema permite cadastrar espaços esportivos (quadras, campos, piscinas, gin�
 ## Modelagem
 
 ```
-┌──────────────┐        N:N        ┌──────────────────┐        1:N        ┌──────────────────┐
-│  Modalidade  │◄─────────────────►│      Espaco      │──────────────────►│     Reserva      │
-├──────────────┤  (ManyToMany)     ├──────────────────┤   (ForeignKey)    ├──────────────────┤
-│ nome (único) │                   │ nome (único)     │                   │ espaco (FK)      │
-│ descricao    │                   │ tipo             │                   │ cliente_nome     │
-└──────────────┘                   │ descricao        │                   │ cliente_email    │
-                                   │ capacidade       │                   │ cliente_telefone │
-                                   │ preco_hora       │                   │ data             │
-                                   │ coberto / ativo  │                   │ hora_inicio/fim  │
-                                   │ horario_abertura │                   │ status           │
-                                   │ horario_fechamento│                  │ observacoes      │
-                                   │ modalidades (M2M)│                   │ valor_total      │
-                                   └──────────────────┘                   └──────────────────┘
+┌────────────────────┐          1:N          ┌──────────────────┐
+│       Espaco       │──────────────────────►│     Reserva      │
+├────────────────────┤     (ForeignKey)      ├──────────────────┤
+│ nome (único)       │                       │ espaco (FK)      │
+│ tipo               │                       │ cliente_nome     │
+│ descricao          │                       │ cliente_email    │
+│ capacidade         │                       │ cliente_telefone │
+│ preco_hora         │                       │ data             │
+│ coberto / ativo    │                       │ hora_inicio/fim  │
+│ horario_abertura   │                       │ status           │
+│ horario_fechamento │                       │ observacoes      │
+└────────────────────┘                       │ valor_total      │
+                                             └──────────────────┘
 ```
 
 - **Espaco → Reserva (1:N)** — `models.ForeignKey(Espaco, on_delete=models.PROTECT, related_name='reservas')`.
   O `PROTECT` impede apagar um espaço que ainda possui reservas; a API responde **400** com uma mensagem explicativa.
-- **Espaco ↔ Modalidade (N:N)** — `models.ManyToManyField(Modalidade, related_name='espacos')`.
 - `valor_total` é calculado no `save()` da reserva: `preco_hora × duração`.
 - Restrições no banco (`CheckConstraint`): `hora_fim > hora_inicio` e `horario_fechamento > horario_abertura`.
 
@@ -58,14 +57,14 @@ O sistema permite cadastrar espaços esportivos (quadras, campos, piscinas, gin�
 ReservaPlay/
 ├── config/                  # Projeto Django (settings, urls raiz, wsgi/asgi)
 ├── reservas/                # App do domínio
-│   ├── models.py            # Modalidade, Espaco, Reserva
+│   ├── models.py            # Espaco, Reserva
 │   ├── serializers.py       # ModelSerializers (leitura aninhada / escrita por ID)
 │   ├── views.py             # ModelViewSets + ações extras
 │   ├── urls.py              # DefaultRouter
 │   ├── filters.py           # FilterSets (django-filter)
 │   ├── exceptions.py        # Handler de exceções (400 integridade / 500 JSON)
 │   ├── admin.py
-│   ├── tests.py             # 30 testes da API
+│   ├── tests.py             # 29 testes da API
 │   └── management/commands/popular_dados.py
 ├── api.http                 # Requisições prontas para demonstração
 ├── .env.example
@@ -180,7 +179,7 @@ Todos os recursos seguem o mesmo padrão gerado pelo `DefaultRouter`:
 | PATCH | `/api/<recurso>/<id>/` | Atualização parcial | 200 |
 | DELETE | `/api/<recurso>/<id>/` | Remove o registro | 204 |
 
-Recursos: `espacos`, `reservas` e `modalidades`.
+Recursos: `espacos` e `reservas`.
 
 Ações extras:
 
@@ -195,7 +194,7 @@ Paginação por página (10 itens): `?page=2`.
 
 **Espaços** — `/api/espacos/`
 - `tipo` (`QUADRA`, `CAMPO`, `PISCINA`, `GINASIO`, `SALAO`), `coberto`, `ativo`
-- `modalidade=<id>`, `preco_min`, `preco_max`, `capacidade_min`
+- `preco_min`, `preco_max`, `capacidade_min`
 - `search=` (nome, descrição) · `ordering=` (`nome`, `preco_hora`, `capacidade`, `criado_em`; prefixo `-` para decrescente)
 
 **Reservas** — `/api/reservas/`
@@ -203,11 +202,9 @@ Paginação por página (10 itens): `?page=2`.
 - `data_inicio`, `data_fim` (período), `cliente_email`
 - `search=` (cliente, e-mail, nome do espaço) · `ordering=` (`data`, `hora_inicio`, `valor_total`, `criado_em`)
 
-**Modalidades** — `/api/modalidades/` · `search=`, `ordering=nome`
-
 ### Serialização dos relacionamentos
 
-Na **leitura** os relacionamentos vêm aninhados; na **escrita** o cliente envia apenas os IDs:
+Na **leitura** o relacionamento vem aninhado; na **escrita** o cliente envia apenas o ID:
 
 ```jsonc
 // POST /api/reservas/
@@ -246,7 +243,7 @@ Na **leitura** os relacionamentos vêm aninhados; na **escrita** o cliente envia
 }
 ```
 
-Para evitar ciclos (espaço → reservas → espaço → ...), os objetos aninhados usam serializers "resumo" (`EspacoResumoSerializer`, `ReservaResumoSerializer`) que não aninham de volta. O detalhe de um espaço (`GET /api/espacos/<id>/`) usa o `EspacoDetalheSerializer`, que inclui as modalidades e a lista resumida de reservas.
+Para evitar ciclos (espaço → reservas → espaço → ...), os objetos aninhados usam serializers "resumo" (`EspacoResumoSerializer`, `ReservaResumoSerializer`) que não aninham de volta. O detalhe de um espaço (`GET /api/espacos/<id>/`) usa o `EspacoDetalheSerializer`, que inclui a lista resumida de reservas.
 
 ### Códigos de status
 

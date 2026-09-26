@@ -4,38 +4,28 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .filters import EspacoFilter, ReservaFilter
-from .models import Espaco, Modalidade, Reserva
+from .models import Espaco, Reserva
 from .serializers import (
     EspacoDetalheSerializer,
     EspacoSerializer,
-    ModalidadeSerializer,
     ReservaSerializer,
 )
-
-
-class ModalidadeViewSet(viewsets.ModelViewSet):
-    """CRUD de modalidades esportivas."""
-
-    queryset = Modalidade.objects.all()
-    serializer_class = ModalidadeSerializer
-    search_fields = ['nome']
-    ordering_fields = ['nome']
 
 
 class EspacoViewSet(viewsets.ModelViewSet):
     """
     CRUD de espaços esportivos.
 
-    GET    /api/espacos/        lista paginada (filtros: tipo, coberto, ativo, modalidade,
-                                preco_min, preco_max, capacidade_min; ?search=; ?ordering=)
-    GET    /api/espacos/<id>/   detalhe com modalidades e reservas aninhadas
+    GET    /api/espacos/        lista paginada (filtros: tipo, coberto, ativo, preco_min,
+                                preco_max, capacidade_min; ?search=; ?ordering=)
+    GET    /api/espacos/<id>/   detalhe com as reservas aninhadas
     POST   /api/espacos/        cria
     PUT    /api/espacos/<id>/   atualização completa
     PATCH  /api/espacos/<id>/   atualização parcial
     DELETE /api/espacos/<id>/   remove (bloqueado se houver reservas -> 400)
     """
 
-    queryset = Espaco.objects.prefetch_related('modalidades').distinct()
+    queryset = Espaco.objects.all()
     filterset_class = EspacoFilter
     search_fields = ['nome', 'descricao']
     ordering_fields = ['nome', 'preco_hora', 'capacidade', 'criado_em']

@@ -5,21 +5,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 
-class Modalidade(models.Model):
-    """Esporte praticado em um espaço (futsal, vôlei, tênis, natação...)."""
-
-    nome = models.CharField(max_length=60, unique=True)
-    descricao = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ['nome']
-        verbose_name = 'modalidade'
-        verbose_name_plural = 'modalidades'
-
-    def __str__(self):
-        return self.nome
-
-
 class Espaco(models.Model):
     """Quadra ou espaço esportivo disponível para reserva."""
 
@@ -43,10 +28,6 @@ class Espaco(models.Model):
     ativo = models.BooleanField(default=True)
     horario_abertura = models.TimeField(default=time(8, 0))
     horario_fechamento = models.TimeField(default=time(22, 0))
-
-    # Relacionamento N:N — um espaço atende várias modalidades e uma
-    # modalidade pode ser praticada em vários espaços.
-    modalidades = models.ManyToManyField(Modalidade, related_name='espacos', blank=True)
 
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
